@@ -3,14 +3,14 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class ControlEnemigo : MonoBehaviour
 {
-    [Header ("Movimiento")]
-    public float velocidad = 2f;
-    private Vector2 posicionInicial;
-    public Vector2 posicionFinal;
-    private bool movimientoHaciaArriba = true;
+    [Header("Movimiento")]
+    [SerializeField] private float velocidad = 2f;                 
+    [SerializeField] private Vector2 desplazamiento = new Vector2(0f, 3f); 
     [SerializeField] private float tolerancia = 0.01f;
 
-
+    private Vector2 posicionInicial;
+    private Vector2 posicionFinal;
+    private bool haciaFinal = true;
     private Rigidbody2D fisica;
 
     private void Awake()
@@ -18,47 +18,41 @@ public class ControlEnemigo : MonoBehaviour
         fisica = GetComponent<Rigidbody2D>();
     }
 
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Start()
     {
-        posicionInicial = transform.position;
+        posicionInicial = fisica.position;
+        posicionFinal = posicionInicial + desplazamiento;
     }
 
-    // Update is called once per frame
     private void FixedUpdate()
     {
-        if (velocidad <= 0)
+        if (velocidad <= 0f)
             return;
 
-        //if (movimientoHaciaArriba)
-        //{
-        //    posicionObjetivo = posicionFinal;
-        //}
-        //else
-        //{
-        //    posicionObjetivo = posicionInicial;
-        //}
+        Vector2 objetivo = haciaFinal ? posicionFinal : posicionInicial;
 
-        Vector2 posicionObjetivo = movimientoHaciaArriba ? posicionFinal : posicionInicial;
-
-        if (Vector2.Distance(fisica.position,posicionObjetivo)<=tolerancia)
+        if (Vector2.Distance(fisica.position, objetivo) <= tolerancia)
         {
-            //if (movimientoHaciaArriba)
-            //{
-            //    movimientoHaciaArriba = false;
-            //    posicionObjetivo = posicionFinal;
-            //}
-            //else
-            //{
-            //    movimientoHaciaArriba = true;
-            //    posicionObjetivo = posicionFinal;
-            //}
-            movimientoHaciaArriba = !movimientoHaciaArriba;
-            posicionObjetivo = movimientoHaciaArriba ? posicionFinal : posicionInicial;
+            haciaFinal = !haciaFinal;
+            objetivo = haciaFinal ? posicionFinal : posicionInicial;
         }
 
-        fisica.MovePosition(Vector2.MoveTowards(fisica.position, posicionObjetivo, velocidad));
+        fisica.MovePosition(
+            Vector2.MoveTowards(fisica.position, objetivo, velocidad)
+        );
+    }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (!collision.gameObject.CompareTag("Player")) return;
+
+        if (collision.gameObject.TryGetComponent(out MovimientoJugador jugador))
+        {
+            jugador.QuitarVida();
+        }
+        else
+        {
+            Debug.LogError("El objeto player necesita MovimientoJugador en la raiz");
+        }
     }
 }
